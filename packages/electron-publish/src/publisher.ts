@@ -41,6 +41,9 @@ export abstract class Publisher {
 
   abstract upload(task: UploadTask): Promise<any>
 
+  async validateArtifacts(artifacts: string[]) {}
+  async commitArtifacts(artifacts: string[]) {}
+
   protected createProgressBar(fileName: string, size: number): ProgressBar | null {
     log.info({ file: fileName, provider: this.providerName }, "uploading")
     if (this.context.progress == null || size < 512 * 1024) {

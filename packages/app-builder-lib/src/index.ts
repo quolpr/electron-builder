@@ -74,6 +74,8 @@ export function build(options: PackagerOptions & PublishOptions, packager: Packa
   }
   process.once("SIGINT", sigIntHandler)
 
+  let commitArtifacts: () => Promise<void> | undefined
+
   const promise = packager.build().then(async buildResult => {
     const afterAllArtifactBuild = resolveFunction(buildResult.configuration.afterAllArtifactBuild, "afterAllArtifactBuild")
     if (afterAllArtifactBuild != null) {
@@ -85,6 +87,10 @@ export function build(options: PackagerOptions & PublishOptions, packager: Packa
       const publishConfigurations = await publishManager.getGlobalPublishConfigurations()
       if (publishConfigurations == null || publishConfigurations.length === 0) {
         return buildResult.artifactPaths
+      }
+
+      for (const publishConfiguration of publishConfigurations) {
+        await publishManager.validateArtifacts(publishConfiguration, packager.appInfo, newArtifacts)
       }
 
       for (const newArtifact of newArtifacts) {
@@ -100,6 +106,12 @@ export function build(options: PackagerOptions & PublishOptions, packager: Packa
           )
         }
       }
+
+      commitArtifacts = async () => {
+        for (const publishConfiguration of publishConfigurations) {
+          await publishManager.commitArtifacts(publishConfiguration, packager.appInfo, newArtifacts)
+        }
+      }
     }
     return buildResult.artifactPaths
   })
@@ -110,7 +122,7 @@ export function build(options: PackagerOptions & PublishOptions, packager: Packa
       publishManager.cancelTasks()
       promise = Promise.resolve(null)
     } else {
-      promise = publishManager.awaitTasks()
+      promise = publishManager.awaitTasks().then(() => (commitArtifacts ? commitArtifacts() : undefined))
     }
 
     return promise.then(() => process.removeListener("SIGINT", sigIntHandler))

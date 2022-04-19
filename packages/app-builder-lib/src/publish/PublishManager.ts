@@ -143,6 +143,42 @@ export class PublishManager implements PublishContext {
   }
 
   /** @internal */
+  validateArtifacts(publishConfig: PublishConfiguration, appInfo: AppInfo, artifacts: string[]) {
+    const publisher = this.getOrCreatePublisher(publishConfig, appInfo)
+
+    if (publisher == null) {
+      log.debug(
+        {
+          reason: "publisher is null",
+          publishConfig: safeStringifyJson(publishConfig),
+        },
+        "not validated"
+      )
+      return
+    }
+
+    return publisher.validateArtifacts(artifacts)
+  }
+
+  /** @internal */
+  commitArtifacts(publishConfig: PublishConfiguration, appInfo: AppInfo, artifacts: string[]) {
+    const publisher = this.getOrCreatePublisher(publishConfig, appInfo)
+
+    if (publisher == null) {
+      log.debug(
+        {
+          reason: "publisher is null",
+          publishConfig: safeStringifyJson(publishConfig),
+        },
+        "not committed"
+      )
+      return
+    }
+
+    return publisher.validateArtifacts(artifacts)
+  }
+
+  /** @internal */
   scheduleUpload(publishConfig: PublishConfiguration, event: UploadTask, appInfo: AppInfo): void {
     if (publishConfig.provider === "generic") {
       return
